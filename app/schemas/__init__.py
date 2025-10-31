@@ -34,6 +34,10 @@ from app.schemas.preferencia import (
     CategoriaCreate,
     CategoriaResponse
 )
+from app.schemas.nivel import (
+    NivelCreate,
+    NivelResponse
+)
 
 __all__ = [
     # Usuario
@@ -67,4 +71,7 @@ __all__ = [
     "LenguajeResponse",
     "CategoriaCreate",
     "CategoriaResponse",
+    # Nivel
+    "NivelCreate",
+    "NivelResponse",
 ]

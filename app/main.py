@@ -11,6 +11,7 @@ from app.routes import (
     preferencias_router,
     lenguaje_router,
     categoria_router,
+    nivel_router,
 )
 from app.utils.exception_handlers import setup_exception_handlers
 from app.utils.responses import create_success_response
@@ -88,6 +89,7 @@ app.include_router(lecturas_router)
 app.include_router(preferencias_router)
 app.include_router(lenguaje_router)
 app.include_router(categoria_router)
+app.include_router(nivel_router)
 
 
 if __name__ == "__main__":

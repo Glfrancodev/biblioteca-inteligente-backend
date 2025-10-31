@@ -5,6 +5,7 @@ from app.models.usuario import Usuario
 from app.models.libro import Libro, Autor, Editorial, AutorLibro
 from app.models.lectura import Lectura
 from app.models.preferencia import Preferencia, Lenguaje, Categoria, PreferenciaLenguaje, PreferenciaCategoria
+from app.models.nivel import Nivel
 from typing import Generator
 import os
 from dotenv import load_dotenv

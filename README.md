@@ -117,7 +117,21 @@ ACCESS_TOKEN_EXPIRE_MINUTES=30
 APP_NAME=BookApp API
 ```
 
-### 6. Ejecutar la aplicación
+### 6. Poblar la base de datos con datos iniciales
+
+Antes de ejecutar la aplicación, poblar la base de datos con niveles, lenguajes y categorías iniciales:
+
+```bash
+python -m app.seed_data
+```
+
+Esto creará:
+
+- 3 niveles: Principiante, Intermedio, Avanzado
+- 12 lenguajes de programación: Python, JavaScript, Java, C++, C#, TypeScript, Go, Rust, PHP, Ruby, Swift, Kotlin
+- 10 categorías: Algoritmos, Desarrollo Web, Desarrollo Móvil, IA, ML, BD, Seguridad, DevOps, Cloud, Arquitectura
+
+### 7. Ejecutar la aplicación
 
 ```bash
 uvicorn app.main:app --reload

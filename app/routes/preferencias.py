@@ -11,6 +11,7 @@ from app.models.preferencia import (
     PreferenciaLenguaje,
     PreferenciaCategoria
 )
+from app.models.nivel import Nivel
 from app.schemas.preferencia import (
     PreferenciaCreate,
     PreferenciaUpdate,
@@ -20,6 +21,7 @@ from app.schemas.preferencia import (
     CategoriaCreate,
     CategoriaResponse
 )
+from app.schemas.nivel import NivelResponse
 from app.services.auth import get_current_active_user
 from app.utils.responses import create_success_response, create_error_response, ErrorCodes
 
@@ -50,8 +52,23 @@ def create_preferencia(
             )
         )
     
+    # Verificar que el nivel existe si se proporciona
+    if preferencia.nivel_id is not None:
+        nivel = db.query(Nivel).filter(Nivel.idNivel == preferencia.nivel_id).first()
+        if not nivel:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=create_error_response(
+                    ErrorCodes.NOT_FOUND,
+                    f"Nivel con ID {preferencia.nivel_id} no encontrado"
+                )
+            )
+    
     # Crear preferencia
-    db_preferencia = Preferencia(idUsuario=current_user.idUsuario)
+    db_preferencia = Preferencia(
+        idUsuario=current_user.idUsuario,
+        idNivel=preferencia.nivel_id
+    )
     db.add(db_preferencia)
     db.commit()
     db.refresh(db_preferencia)
@@ -89,6 +106,8 @@ def create_preferencia(
         CategoriaResponse.model_validate(pc.categoria) 
         for pc in db_preferencia.preferencia_categorias
     ]
+    if db_preferencia.nivel:
+        response.nivel = NivelResponse.model_validate(db_preferencia.nivel)
     
     preferencia_dict = response.model_dump()
     return create_success_response(
@@ -125,6 +144,8 @@ def read_my_preferencias(
         CategoriaResponse.model_validate(pc.categoria) 
         for pc in preferencia.preferencia_categorias
     ]
+    if preferencia.nivel:
+        response.nivel = NivelResponse.model_validate(preferencia.nivel)
     
     preferencia_dict = response.model_dump()
     return create_success_response(
@@ -154,6 +175,20 @@ def update_my_preferencias(
         )
     
     update_data = preferencia_update.model_dump(exclude_unset=True)
+    
+    # Actualizar nivel si se proporciona
+    if "nivel_id" in update_data:
+        if update_data["nivel_id"] is not None:
+            nivel = db.query(Nivel).filter(Nivel.idNivel == update_data["nivel_id"]).first()
+            if not nivel:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=create_error_response(
+                        ErrorCodes.NOT_FOUND,
+                        f"Nivel con ID {update_data['nivel_id']} no encontrado"
+                    )
+                )
+        db_preferencia.idNivel = update_data["nivel_id"]
     
     # Actualizar lenguajes
     if "lenguajes_ids" in update_data:
@@ -197,6 +232,8 @@ def update_my_preferencias(
         CategoriaResponse.model_validate(pc.categoria) 
         for pc in db_preferencia.preferencia_categorias
     ]
+    if db_preferencia.nivel:
+        response.nivel = NivelResponse.model_validate(db_preferencia.nivel)
     
     preferencia_dict = response.model_dump()
     return create_success_response(

@@ -36,14 +36,16 @@ class Preferencia(Base):
     idPreferencias = Column(Integer, primary_key=True, index=True)
     creada_en = Column(DateTime, default=datetime.utcnow, nullable=False)
     idUsuario = Column(Integer, ForeignKey("usuarios.idUsuario"), nullable=False, unique=True)
+    idNivel = Column(Integer, ForeignKey("niveles.idNivel"), nullable=True)
 
     # Relaciones
     usuario = relationship("Usuario", back_populates="preferencia")
+    nivel = relationship("Nivel", back_populates="preferencias")
     preferencia_lenguajes = relationship("PreferenciaLenguaje", back_populates="preferencia", cascade="all, delete-orphan")
     preferencia_categorias = relationship("PreferenciaCategoria", back_populates="preferencia", cascade="all, delete-orphan")
 
     def __repr__(self):
-        return f"<Preferencia(id={self.idPreferencias}, usuario_id={self.idUsuario})>"
+        return f"<Preferencia(id={self.idPreferencias}, usuario_id={self.idUsuario}, nivel_id={self.idNivel})>"
 
 
 class PreferenciaLenguaje(Base):
