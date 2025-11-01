@@ -54,12 +54,12 @@ class GoogleBooksService:
             # Log para debugging
             total_items = data.get("totalItems", 0)
             items_count = len(data.get("items", []))
-            print(f"  📊 API Response: totalItems={total_items}, items_received={items_count}")
+            print(f"  API Response: totalItems={total_items}, items_received={items_count}")
             
             return data
             
         except requests.exceptions.RequestException as e:
-            print(f"⚠️ Error al consultar Google Books API: {str(e)}")
+            print(f"Error al consultar Google Books API: {str(e)}")
             raise HTTPException(
                 status_code=500,
                 detail=f"Error al consultar Google Books API: {str(e)}"
@@ -86,7 +86,7 @@ class GoogleBooksService:
         max_results_per_request = 40
         requests_needed = (total_books + max_results_per_request - 1) // max_results_per_request
         
-        print(f"📚 Obteniendo {total_books} libros de '{subject}'...")
+        print(f"Obteniendo {total_books} libros de '{subject}'...")
         
         for i in range(requests_needed):
             start_index = i * max_results_per_request
@@ -102,11 +102,11 @@ class GoogleBooksService:
                 
                 items = response.get("items", [])
                 if not items:
-                    print(f"⚠️ No hay más resultados después de {len(all_books)} libros")
+                    print(f"No hay más resultados después de {len(all_books)} libros")
                     break
                 
                 all_books.extend(items)
-                print(f"  ✓ Obtenidos {len(all_books)}/{total_books} libros...")
+                print(f"  Obtenidos {len(all_books)}/{total_books} libros...")
                 
                 # Evitar rate limiting
                 if i < requests_needed - 1:
@@ -117,7 +117,7 @@ class GoogleBooksService:
                     break
                     
             except Exception as e:
-                print(f"⚠️ Error en request {i+1}: {str(e)}")
+                print(f"Error en request {i+1}: {str(e)}")
                 # Continuar con los que tenemos
                 break
         
@@ -186,6 +186,9 @@ class GoogleBooksService:
                     isbn = identifier.get("identifier", "")
                     break
             
+            # URL del libro (solo el enlace informativo básico)
+            url_libro = volume_info.get("infoLink")
+            
             return {
                 "titulo": titulo,
                 "autores": autores,
@@ -196,11 +199,12 @@ class GoogleBooksService:
                 "fecha_publicacion": fecha_publicacion,
                 "portada_url": portada_url,
                 "isbn": isbn,
-                "google_books_id": book_item.get("id", "")
+                "google_books_id": book_item.get("id", ""),
+                "url_libro": url_libro
             }
             
         except Exception as e:
-            print(f"⚠️ Error al parsear libro: {str(e)}")
+            print(f"Error al parsear libro: {str(e)}")
             return None
     
     def get_programming_books(
@@ -343,11 +347,11 @@ class GoogleBooksService:
         seen_titles = set()  # Para evitar duplicados
         
         for subject in subjects:
-            print(f"\n🔍 Buscando libros de: {subject} (Progreso: {len(all_parsed_books)}/{total_books})")
+            print(f"\nBuscando libros de: {subject} (Progreso: {len(all_parsed_books)}/{total_books})")
             
             # Si ya alcanzamos el objetivo, detener
             if len(all_parsed_books) >= total_books:
-                print(f"🎯 ¡Objetivo alcanzado! {len(all_parsed_books)} libros únicos obtenidos")
+                print(f"Objetivo alcanzado! {len(all_parsed_books)} libros únicos obtenidos")
                 break
             
             try:
@@ -374,13 +378,13 @@ class GoogleBooksService:
                             if len(all_parsed_books) >= total_books:
                                 break
                 
-                print(f"  ✓ Agregados {books_added_from_subject} libros únicos de '{subject}'")
+                print(f"  Agregados {books_added_from_subject} libros únicos de '{subject}'")
                 
             except Exception as e:
-                print(f"⚠️ Error al obtener libros de '{subject}': {str(e)}")
+                print(f"Error al obtener libros de '{subject}': {str(e)}")
                 continue
         
-        print(f"\n✅ Total de libros únicos obtenidos: {len(all_parsed_books)}")
+        print(f"\nTotal de libros únicos obtenidos: {len(all_parsed_books)}")
         return all_parsed_books
 
 

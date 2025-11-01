@@ -12,6 +12,7 @@ class Lenguaje(Base):
 
     # Relaciones
     preferencia_lenguajes = relationship("PreferenciaLenguaje", back_populates="lenguaje", cascade="all, delete-orphan")
+    libro_lenguajes = relationship("LibroLenguaje", back_populates="lenguaje", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Lenguaje(id={self.idLenguaje}, nombre={self.nombre})>"
@@ -25,6 +26,7 @@ class Categoria(Base):
 
     # Relaciones
     preferencia_categorias = relationship("PreferenciaCategoria", back_populates="categoria", cascade="all, delete-orphan")
+    libro_categorias = relationship("LibroCategoria", back_populates="categoria", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Categoria(id={self.idCategoria}, nombre={self.nombre})>"

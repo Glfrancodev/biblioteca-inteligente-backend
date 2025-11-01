@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from app.models import Base
 from app.models.usuario import Usuario
-from app.models.libro import Libro, Autor, Editorial, AutorLibro
+from app.models.libro import Libro, Autor, Editorial, AutorLibro, LibroCategoria, LibroLenguaje
 from app.models.lectura import Lectura
 from app.models.preferencia import Preferencia, Lenguaje, Categoria, PreferenciaLenguaje, PreferenciaCategoria
 from app.models.nivel import Nivel

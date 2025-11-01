@@ -44,6 +44,8 @@ class Libro(Base):
     editorial = relationship("Editorial", back_populates="libros")
     autor_libros = relationship("AutorLibro", back_populates="libro", cascade="all, delete-orphan")
     lecturas = relationship("Lectura", back_populates="libro", cascade="all, delete-orphan")
+    libro_categorias = relationship("LibroCategoria", back_populates="libro", cascade="all, delete-orphan")
+    libro_lenguajes = relationship("LibroLenguaje", back_populates="libro", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Libro(id={self.idLibro}, titulo={self.titulo})>"
@@ -62,3 +64,34 @@ class AutorLibro(Base):
 
     def __repr__(self):
         return f"<AutorLibro(id={self.idAutorLibro}, autor_id={self.idAutor}, libro_id={self.idLibro})>"
+
+
+class LibroCategoria(Base):
+    __tablename__ = "libro_categorias"
+
+    idLibroCategoria = Column(Integer, primary_key=True, index=True)
+    idLibro = Column(Integer, ForeignKey("libros.idLibro"), nullable=False)
+    idCategoria = Column(Integer, ForeignKey("categorias.idCategoria"), nullable=False)
+
+    # Relaciones
+    libro = relationship("Libro", back_populates="libro_categorias")
+    categoria = relationship("Categoria", back_populates="libro_categorias")
+
+    def __repr__(self):
+        return f"<LibroCategoria(id={self.idLibroCategoria}, libro_id={self.idLibro}, categoria_id={self.idCategoria})>"
+
+
+class LibroLenguaje(Base):
+    __tablename__ = "libro_lenguajes"
+
+    idLibroLenguaje = Column(Integer, primary_key=True, index=True)
+    idLibro = Column(Integer, ForeignKey("libros.idLibro"), nullable=False)
+    idLenguaje = Column(Integer, ForeignKey("lenguajes.idLenguaje"), nullable=False)
+
+    # Relaciones
+    libro = relationship("Libro", back_populates="libro_lenguajes")
+    lenguaje = relationship("Lenguaje", back_populates="libro_lenguajes")
+
+    def __repr__(self):
+        return f"<LibroLenguaje(id={self.idLibroLenguaje}, libro_id={self.idLibro}, lenguaje_id={self.idLenguaje})>"
+

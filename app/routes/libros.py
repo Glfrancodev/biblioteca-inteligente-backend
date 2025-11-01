@@ -161,12 +161,8 @@ async def create_libro_with_file(
     response = LibroResponse.model_validate(db_libro)
     response.autores = [AutorResponse.model_validate(al.autor) for al in db_libro.autor_libros]
     
-    libro_dict = response.model_dump()
-    # Agregar URL firmada a la respuesta (no se guarda en BD)
-    libro_dict["url_firmada"] = signed_url
-    
     return create_success_response(
-        data=libro_dict,
+        data=response.model_dump(),
         message="Libro creado exitosamente con archivo PDF"
     )
 
@@ -283,19 +279,8 @@ def read_libro(libro_id: int, db: Session = Depends(get_db)):
     response = LibroResponse.model_validate(libro)
     response.autores = [AutorResponse.model_validate(al.autor) for al in libro.autor_libros]
     
-    libro_dict = response.model_dump()
-    
-    # Si tiene URL en S3, generar URL firmada
-    if libro.urlLibro:
-        try:
-            libro_dict["url_firmada"] = s3_service.generate_presigned_url(libro.urlLibro)
-        except:
-            libro_dict["url_firmada"] = None
-    else:
-        libro_dict["url_firmada"] = None
-    
     return create_success_response(
-        data=libro_dict,
+        data=response.model_dump(),
         message="Libro obtenido exitosamente",
         count=1
     )
@@ -747,3 +732,212 @@ def get_libro_pdf(
                 f"Error al descargar archivo de S3: {str(e)}"
             )
         )
+
+
+# ENDPOINT ADMIN PARA POBLAR LIBROS
+@admin_router.post("/populate-books")
+async def populate_books_from_google(
+    background_tasks: BackgroundTasks,
+    total_books: int = 500,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_active_user)
+):
+    """Poblar la base de datos con libros desde Google Books API (proceso en background)"""
+    
+    # Validar parámetros
+    if total_books <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=create_error_response(
+                ErrorCodes.INVALID_INPUT,
+                "El número de libros debe ser mayor a 0"
+            )
+        )
+    
+    if total_books > 2000:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=create_error_response(
+                ErrorCodes.INVALID_INPUT,
+                "El número máximo de libros es 2000 para evitar sobrecarga"
+            )
+        )
+    
+    # Verificar que existen lenguajes y categorías
+    from app.models.preferencia import Lenguaje, Categoria
+    
+    lenguajes_count = db.query(Lenguaje).count()
+    categorias_count = db.query(Categoria).count()
+    
+    if lenguajes_count == 0 or categorias_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=create_error_response(
+                ErrorCodes.MISSING_DATA,
+                "Debes tener lenguajes y categorías en la base de datos. Ejecuta primero el seed_data."
+            )
+        )
+    
+    def run_populate_books():
+        """Función que se ejecutará en background"""
+        try:
+            from app.populate_books import BookPopulator
+            from app.database.session import SessionLocal
+            
+            print(f"🚀 [API] Iniciando población de {total_books} libros...")
+            print(f"📊 [API] Lenguajes disponibles: {lenguajes_count}")
+            print(f"📊 [API] Categorías disponibles: {categorias_count}")
+            
+            # Crear nueva sesión para el background task
+            db_bg = SessionLocal()
+            
+            try:
+                populator = BookPopulator()
+                populator.populate_books(total_books=total_books)
+                print("✅ [API] Población de libros completada!")
+                
+            except Exception as inner_e:
+                print(f"❌ [API] Error durante la población: {str(inner_e)}")
+                db_bg.rollback()
+                raise
+            finally:
+                db_bg.close()
+                
+        except Exception as e:
+            print(f"❌ [API] Error crítico en población de libros: {str(e)}")
+    
+    # Agregar tarea al background
+    background_tasks.add_task(run_populate_books)
+    
+    # Obtener estadísticas actuales
+    current_books = db.query(Libro).count()
+    
+    return create_success_response(
+        data={
+            "message": f"Población de {total_books} libros iniciada",
+            "status": "processing",
+            "total_requested": total_books,
+            "current_books_count": current_books,
+            "lenguajes_available": lenguajes_count,
+            "categorias_available": categorias_count,
+            "estimated_completion": f"~{total_books // 10} minutos"
+        },
+        message=f"✅ La población de {total_books} libros ha iniciado en background. Usa /admin/populate-status para ver el progreso."
+    )
+
+
+@admin_router.get("/populate-status")
+def get_populate_status(
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_active_user)
+):
+    """Obtener el estado actual de libros en la base de datos"""
+    
+    # Contar elementos actuales
+    total_libros = db.query(Libro).count()
+    total_autores = db.query(Autor).count()
+    total_editoriales = db.query(Editorial).count()
+    
+    # Contar elementos de configuración
+    from app.models.preferencia import Lenguaje, Categoria
+    from app.models.nivel import Nivel
+    
+    total_lenguajes = db.query(Lenguaje).count()
+    total_categorias = db.query(Categoria).count()
+    total_niveles = db.query(Nivel).count()
+    
+    # Obtener algunos ejemplos de libros recientes
+    libros_recientes = db.query(Libro).order_by(Libro.idLibro.desc()).limit(5).all()
+    libros_ejemplos = [
+        {
+            "id": libro.idLibro,
+            "titulo": libro.titulo,
+            "editorial": libro.editorial.nombre if libro.editorial else "Sin editorial"
+        }
+        for libro in libros_recientes
+    ]
+    
+    # Determinar estado del sistema
+    system_ready = total_lenguajes > 0 and total_categorias > 0 and total_niveles > 0
+    
+    return create_success_response(
+        data={
+            "database_stats": {
+                "total_libros": total_libros,
+                "total_autores": total_autores,
+                "total_editoriales": total_editoriales
+            },
+            "configuration_stats": {
+                "total_lenguajes": total_lenguajes,
+                "total_categorias": total_categorias,
+                "total_niveles": total_niveles
+            },
+            "system_status": {
+                "ready_for_population": system_ready,
+                "can_categorize_books": total_lenguajes > 0 and total_categorias > 0,
+                "seed_data_loaded": total_niveles > 0
+            },
+            "recent_books": libros_ejemplos,
+            "recommendations": {
+                "next_action": "Ejecutar /admin/populate-books" if system_ready and total_libros < 100 else "Sistema listo",
+                "suggested_book_count": max(100, 500 - total_libros) if total_libros < 500 else 0
+            }
+        },
+        message=f"📊 Base de datos: {total_libros} libros, {total_autores} autores, {total_editoriales} editoriales",
+        count=total_libros
+    )
+
+
+@admin_router.post("/populate-books-quick")
+async def populate_books_quick(
+    background_tasks: BackgroundTasks,
+    total_books: int = 100,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_active_user)
+):
+    """Población rápida de libros (para pruebas) - máximo 200 libros"""
+    
+    if total_books > 200:
+        total_books = 200
+    
+    # Verificar configuración
+    from app.models.preferencia import Lenguaje, Categoria
+    
+    lenguajes_count = db.query(Lenguaje).count()
+    categorias_count = db.query(Categoria).count()
+    
+    if lenguajes_count == 0 or categorias_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Ejecuta primero el seed_data para tener lenguajes y categorías"
+        )
+    
+    def run_quick_populate():
+        """Población rápida optimizada"""
+        try:
+            from app.populate_books import BookPopulator
+            
+            print(f"⚡ [API-QUICK] Iniciando población rápida de {total_books} libros...")
+            
+            populator = BookPopulator()
+            populator.populate_books(total_books=total_books)
+            
+            print(f"✅ [API-QUICK] Población rápida completada!")
+            
+        except Exception as e:
+            print(f"❌ [API-QUICK] Error: {str(e)}")
+    
+    background_tasks.add_task(run_quick_populate)
+    
+    current_books = db.query(Libro).count()
+    
+    return create_success_response(
+        data={
+            "mode": "quick_populate",
+            "total_requested": total_books,
+            "current_books": current_books,
+            "estimated_time": "2-5 minutos",
+            "status": "processing"
+        },
+        message=f"⚡ Población rápida de {total_books} libros iniciada"
+    )
