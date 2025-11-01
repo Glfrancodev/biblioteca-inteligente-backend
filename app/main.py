@@ -7,6 +7,7 @@ from app.routes import (
     libros_router,
     editorial_router,
     autor_router,
+    admin_router,
     lecturas_router,
     preferencias_router,
     lenguaje_router,
@@ -85,6 +86,7 @@ app.include_router(usuarios_router)
 app.include_router(libros_router)
 app.include_router(editorial_router)
 app.include_router(autor_router)
+app.include_router(admin_router)
 app.include_router(lecturas_router)
 app.include_router(preferencias_router)
 app.include_router(lenguaje_router)

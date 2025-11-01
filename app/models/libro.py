@@ -37,6 +37,7 @@ class Libro(Base):
     totalPaginas = Column(Integer, nullable=False)
     sinopsis = Column(String(2000), nullable=True)
     urlLibro = Column(String(500), nullable=True)
+    urlPortada = Column(String(500), nullable=True)
     idEditorial = Column(Integer, ForeignKey("editoriales.idEditorial"), nullable=False)
 
     # Relaciones

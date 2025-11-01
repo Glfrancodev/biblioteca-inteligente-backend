@@ -38,6 +38,7 @@ class LibroBase(BaseModel):
     totalPaginas: int = Field(..., gt=0)
     sinopsis: Optional[str] = Field(None, max_length=2000)
     urlLibro: Optional[str] = Field(None, max_length=500)
+    urlPortada: Optional[str] = Field(None, max_length=500)
 
 
 class LibroCreate(LibroBase):
@@ -50,6 +51,7 @@ class LibroUpdate(BaseModel):
     totalPaginas: Optional[int] = Field(None, gt=0)
     sinopsis: Optional[str] = Field(None, max_length=2000)
     urlLibro: Optional[str] = Field(None, max_length=500)
+    urlPortada: Optional[str] = Field(None, max_length=500)
     idEditorial: Optional[int] = None
     autores_ids: Optional[List[int]] = None
 
