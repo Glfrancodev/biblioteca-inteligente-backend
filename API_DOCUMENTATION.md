@@ -721,10 +721,63 @@ Obtener lista de autores
       "nombre": "Isabel Allende"
     }
   ],
-  "message": "2 autores obtenidos exitosamente",
+  "message": "Autores obtenidos exitosamente",
+  "count": 2,
   "timestamp": "2025-10-31T12:00:00"
 }
 ```
+
+---
+
+#### `GET /autores/{autor_id}/libros`
+
+Obtener todos los libros de un autor específico
+
+**Autenticación:** No requerida
+
+**Path Parameters:**
+
+- `autor_id`: ID del autor
+
+**Query Parameters:**
+
+- `skip` (opcional): Número de registros a omitir (default: 0)
+- `limit` (opcional): Número máximo de registros (default: 100)
+
+**Respuesta Exitosa (200):**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "idLibro": 5,
+      "titulo": "Cien Años de Soledad",
+      "totalPaginas": 417,
+      "urlPortada": "https://books.google.com/books/content?id=...",
+      "nombre_autor": "Gabriel García Márquez",
+      "sinopsis": "La obra maestra de García Márquez...",
+      "idEditorial": 3
+    },
+    {
+      "idLibro": 12,
+      "titulo": "El Amor en los Tiempos del Cólera",
+      "totalPaginas": 368,
+      "urlPortada": "https://books.google.com/books/content?id=...",
+      "nombre_autor": "Gabriel García Márquez",
+      "sinopsis": "Una historia de amor que perdura...",
+      "idEditorial": 3
+    }
+  ],
+  "message": "Libros del autor Gabriel García Márquez obtenidos exitosamente",
+  "count": 2,
+  "timestamp": "2025-10-31T12:00:00"
+}
+```
+
+**Posibles Errores:**
+
+- `404 - BOOK_003`: Autor no encontrado
 
 ---
 

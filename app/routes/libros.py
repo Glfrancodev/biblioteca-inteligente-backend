@@ -232,6 +232,18 @@ def create_libro(
     )
 
 
+@router.get("/count")
+def get_total_libros_count(db: Session = Depends(get_db)):
+    """Obtener el total de libros (solo el número)"""
+    total = db.query(Libro).count()
+    
+    return create_success_response(
+        data={"total_libros": total},
+        message="Total de libros obtenido exitosamente",
+        count=1
+    )
+
+
 @router.get("")
 def read_libros(
     skip: int = 0,
@@ -446,6 +458,55 @@ def read_autores(skip: int = 0, limit: int = 100, db: Session = Depends(get_db))
     )
 
 
+@autor_router.get("/{autor_id}/libros")
+def get_libros_by_autor(
+    autor_id: int,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db)
+):
+    """Obtener todos los libros de un autor específico"""
+    # Verificar que el autor existe
+    autor = db.query(Autor).filter(Autor.idAutor == autor_id).first()
+    if not autor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=create_error_response(
+                ErrorCodes.AUTHOR_NOT_FOUND,
+                "Autor no encontrado"
+            )
+        )
+    
+    # Obtener libros del autor a través de la tabla intermedia AutorLibro
+    libros_query = db.query(Libro).join(
+        AutorLibro, Libro.idLibro == AutorLibro.idLibro
+    ).filter(
+        AutorLibro.idAutor == autor_id
+    ).offset(skip).limit(limit)
+    
+    libros = libros_query.all()
+    
+    # Construir respuesta con la información solicitada
+    responses = []
+    for libro in libros:
+        libro_data = {
+            "idLibro": libro.idLibro,
+            "titulo": libro.titulo,
+            "totalPaginas": libro.totalPaginas,
+            "urlPortada": libro.urlPortada,
+            "nombre_autor": autor.nombre,
+            "sinopsis": libro.sinopsis,
+            "idEditorial": libro.idEditorial
+        }
+        responses.append(libro_data)
+    
+    return create_success_response(
+        data=responses,
+        message=f"Libros del autor {autor.nombre} obtenidos exitosamente",
+        count=len(responses)
+    )
+
+
 # ENDPOINTS DE ADMINISTRACIÓN
 def populate_books_task(total_books: int, db: Session):
     """Tarea en background para poblar la BD"""
@@ -611,3 +672,78 @@ def get_populate_status(db: Session = Depends(get_db)):
         message="Estadísticas obtenidas exitosamente",
         count=1
     )
+
+
+@router.get("/{libro_id}/pdf")
+def get_libro_pdf(
+    libro_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_active_user)
+):
+    """Servir el PDF del libro como proxy para evitar problemas CORS"""
+    from fastapi.responses import StreamingResponse
+    import requests
+    import io
+    
+    # Verificar que el libro existe
+    libro = db.query(Libro).filter(Libro.idLibro == libro_id).first()
+    if not libro:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=create_error_response(
+                ErrorCodes.BOOK_NOT_FOUND,
+                "Libro no encontrado"
+            )
+        )
+    
+    # Verificar que tiene archivo PDF
+    if not libro.urlLibro:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=create_error_response(
+                ErrorCodes.FILE_NOT_FOUND,
+                "Este libro no tiene archivo PDF"
+            )
+        )
+    
+    # Generar URL firmada de S3
+    try:
+        presigned_url = s3_service.generate_presigned_url(libro.urlLibro, expiration=3600)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=create_error_response(
+                ErrorCodes.S3_ERROR,
+                f"Error al generar URL del archivo: {str(e)}"
+            )
+        )
+    
+    # Descargar el PDF de S3 y hacer streaming al cliente
+    try:
+        response = requests.get(presigned_url, timeout=30, stream=True)
+        response.raise_for_status()
+        
+        # Crear un generador para streaming
+        def generate():
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    yield chunk
+        
+        return StreamingResponse(
+            generate(),
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'inline; filename="{libro.titulo}.pdf"',
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, OPTIONS",
+                "Access-Control-Allow-Headers": "*",
+            }
+        )
+    except requests.RequestException as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=create_error_response(
+                ErrorCodes.S3_ERROR,
+                f"Error al descargar archivo de S3: {str(e)}"
+            )
+        )

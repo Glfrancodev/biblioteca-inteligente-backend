@@ -43,12 +43,11 @@ def create_lectura(
     ).first()
     
     if lectura_existente:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=create_error_response(
-                ErrorCodes.READING_ALREADY_EXISTS,
-                "Ya tienes una lectura registrada para este libro"
-            )
+        # Si ya existe, devolver la lectura existente en lugar de error
+        lectura_dict = LecturaResponse.model_validate(lectura_existente).model_dump()
+        return create_success_response(
+            data=lectura_dict,
+            message="Ya tienes una lectura registrada para este libro"
         )
     
     # Crear lectura
@@ -101,6 +100,44 @@ def read_lecturas(
         data=responses,
         message="Lecturas obtenidas exitosamente",
         count=len(responses)
+    )
+
+
+@router.get("/libro/{libro_id}")
+def get_lectura_by_libro(
+    libro_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_active_user)
+):
+    """Obtener la lectura del usuario actual para un libro específico"""
+    lectura = db.query(Lectura).filter(
+        Lectura.idLibro == libro_id,
+        Lectura.idUsuario == current_user.idUsuario
+    ).first()
+    
+    if not lectura:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=create_error_response(
+                ErrorCodes.READING_NOT_FOUND,
+                "No se encontró una lectura para este libro"
+            )
+        )
+    
+    response = LecturaDetailResponse.model_validate(lectura)
+    response.libro_titulo = lectura.libro.titulo
+    response.libro_total_paginas = lectura.libro.totalPaginas
+    
+    if lectura.libro.totalPaginas > 0:
+        response.progreso_porcentaje = (lectura.paginaLeidas / lectura.libro.totalPaginas) * 100
+    else:
+        response.progreso_porcentaje = 0
+    
+    lectura_dict = response.model_dump()
+    return create_success_response(
+        data=lectura_dict,
+        message="Lectura obtenida exitosamente",
+        count=1
     )
 
 
