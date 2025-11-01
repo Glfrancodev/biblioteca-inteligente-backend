@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, BackgroundTasks
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 from typing import List, Optional
 
 from app.database import get_db
 from app.models.usuario import Usuario
-from app.models.libro import Libro, Editorial, Autor, AutorLibro
+from app.models.libro import Libro, Editorial, Autor, AutorLibro, LibroCategoria, LibroLenguaje
 from app.schemas.libro import (
     LibroCreate,
     LibroUpdate,
@@ -246,8 +246,22 @@ def read_libros(
     limit: int = 100,
     db: Session = Depends(get_db)
 ):
-    """Obtener lista de libros"""
-    libros = db.query(Libro).offset(skip).limit(limit).all()
+    """Obtener lista de libros con eager loading optimizado"""
+    from app.models.preferencia import Categoria, Lenguaje
+    
+    libros = (
+        db.query(Libro)
+        .options(
+            selectinload(Libro.editorial),
+            selectinload(Libro.autor_libros).selectinload(AutorLibro.autor),
+            selectinload(Libro.libro_categorias).selectinload(LibroCategoria.categoria),
+            selectinload(Libro.libro_lenguajes).selectinload(LibroLenguaje.lenguaje)
+        )
+        .order_by(Libro.idLibro)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
     
     # Construir respuestas con autores
     responses = []

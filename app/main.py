@@ -14,6 +14,7 @@ from app.routes import (
     categoria_router,
     nivel_router,
 )
+from app.routes.recomendaciones import router as recomendaciones_router
 from app.utils.exception_handlers import setup_exception_handlers
 from app.utils.responses import create_success_response
 import os
@@ -92,6 +93,7 @@ app.include_router(preferencias_router)
 app.include_router(lenguaje_router)
 app.include_router(categoria_router)
 app.include_router(nivel_router)
+app.include_router(recomendaciones_router)
 
 
 if __name__ == "__main__":

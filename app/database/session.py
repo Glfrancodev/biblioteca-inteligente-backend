@@ -25,7 +25,7 @@ DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NA
 # Crear el engine de SQLAlchemy
 engine = create_engine(
     DATABASE_URL,
-    echo=True,  # Muestra las consultas SQL en la consola (solo para desarrollo)
+    echo=False,  # Desactivar logs SQL
     pool_pre_ping=True  # Verifica la conexión antes de usar
 )
 

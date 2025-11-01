@@ -186,13 +186,13 @@ class BookPopulator:
             # Crear o obtener editorial
             editorial = self.create_or_get_editorial(metadata["editorial"], db)
             
-            # Crear libro
+            # Crear libro (Google Books no tiene PDF, solo infoLink)
             libro = Libro(
                 titulo=metadata["titulo"],
                 totalPaginas=metadata["paginas_totales"],
                 sinopsis=metadata["sinopsis"],
                 urlPortada=metadata["portada_url"],
-                urlLibro=metadata.get("url_libro"),
+                urlLibro=None,  # Google Books no proporciona PDF
                 idEditorial=editorial.idEditorial
             )
             
