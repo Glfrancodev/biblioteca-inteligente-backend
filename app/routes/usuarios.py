@@ -107,7 +107,8 @@ def read_users_me(current_user: Usuario = Depends(get_current_active_user)):
     usuario_dict = UsuarioResponse.model_validate(current_user).model_dump()
     return create_success_response(
         data=usuario_dict,
-        message="Usuario obtenido exitosamente"
+        message="Usuario obtenido exitosamente",
+        count=1
     )
 
 
@@ -127,7 +128,8 @@ def read_users(
     
     return create_success_response(
         data=usuarios_dict,
-        message=f"{len(usuarios_dict)} usuarios obtenidos exitosamente"
+        message="Usuarios obtenidos exitosamente",
+        count=len(usuarios_dict)
     )
 
 
@@ -151,7 +153,8 @@ def read_user(
     usuario_dict = UsuarioResponse.model_validate(usuario).model_dump()
     return create_success_response(
         data=usuario_dict,
-        message="Usuario obtenido exitosamente"
+        message="Usuario obtenido exitosamente",
+        count=1
     )
 
 

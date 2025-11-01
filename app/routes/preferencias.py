@@ -150,7 +150,8 @@ def read_my_preferencias(
     preferencia_dict = response.model_dump()
     return create_success_response(
         data=preferencia_dict,
-        message="Preferencias obtenidas exitosamente"
+        message="Preferencias obtenidas exitosamente",
+        count=1
     )
 
 
@@ -298,7 +299,8 @@ def read_lenguajes(skip: int = 0, limit: int = 100, db: Session = Depends(get_db
     
     return create_success_response(
         data=lenguajes_dict,
-        message=f"{len(lenguajes_dict)} lenguajes obtenidos exitosamente"
+        message="Lenguajes obtenidos exitosamente",
+        count=len(lenguajes_dict)
     )
 
 
@@ -330,5 +332,6 @@ def read_categorias(skip: int = 0, limit: int = 100, db: Session = Depends(get_d
     
     return create_success_response(
         data=categorias_dict,
-        message=f"{len(categorias_dict)} categorías obtenidas exitosamente"
+        message="Categorías obtenidas exitosamente",
+        count=len(categorias_dict)
     )

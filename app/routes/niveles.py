@@ -53,7 +53,8 @@ def read_niveles(skip: int = 0, limit: int = 100, db: Session = Depends(get_db))
     
     return create_success_response(
         data=niveles_dict,
-        message=f"{len(niveles_dict)} niveles obtenidos exitosamente"
+        message="Niveles obtenidos exitosamente",
+        count=len(niveles_dict)
     )
 
 
@@ -77,7 +78,8 @@ def read_nivel(
     nivel_dict = NivelResponse.model_validate(nivel).model_dump()
     return create_success_response(
         data=nivel_dict,
-        message="Nivel obtenido exitosamente"
+        message="Nivel obtenido exitosamente",
+        count=1
     )
 
 

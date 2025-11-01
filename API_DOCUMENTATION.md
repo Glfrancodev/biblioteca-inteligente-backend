@@ -45,6 +45,20 @@ Todas las respuestas de la API siguen un formato consistente:
 }
 ```
 
+**Nota:** Cuando la respuesta contiene una lista de elementos, se incluye el campo `count`:
+
+```json
+{
+  "success": true,
+  "data": [
+    /* array de elementos */
+  ],
+  "message": "Elementos obtenidos exitosamente",
+  "count": 25,
+  "timestamp": "2025-10-31T12:00:00"
+}
+```
+
 #### Respuesta de Error
 
 ```json
@@ -791,7 +805,8 @@ Obtener todas las lecturas del usuario actual
       "progreso_porcentaje": 11.99
     }
   ],
-  "message": "1 lecturas obtenidas exitosamente",
+  "message": "Lecturas obtenidas exitosamente",
+  "count": 1,
   "timestamp": "2025-10-31T12:00:00"
 }
 ```
@@ -892,6 +907,131 @@ Eliminar una lectura
 **Posibles Errores:**
 
 - `404 - READING_001`: Lectura no encontrada
+
+---
+
+#### `GET /lecturas/estado/completados`
+
+Obtener todos los libros completados del usuario actual
+
+**Autenticación:** Requerida
+
+**Query Parameters:**
+
+- `skip` (opcional): Número de registros a omitir (default: 0)
+- `limit` (opcional): Número máximo de registros (default: 100)
+
+**Respuesta Exitosa (200):**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "idLectura": 5,
+      "idUsuario": 1,
+      "idLibro": 3,
+      "paginaLeidas": 417,
+      "estado": "completado",
+      "libro_titulo": "Cien Años de Soledad",
+      "libro_total_paginas": 417,
+      "progreso_porcentaje": 100.0,
+      "url_firmada": "https://semilleros-frontend.s3.amazonaws.com/libros/...",
+      "urlPortada": "https://books.google.com/books/content?id=..."
+    },
+    {
+      "idLectura": 8,
+      "idUsuario": 1,
+      "idLibro": 7,
+      "paginaLeidas": 328,
+      "estado": "completado",
+      "libro_titulo": "1984",
+      "libro_total_paginas": 328,
+      "progreso_porcentaje": 100.0,
+      "url_firmada": null,
+      "urlPortada": "https://books.google.com/books/content?id=..."
+    }
+  ],
+  "message": "Libros completados obtenidos exitosamente",
+  "count": 2,
+  "timestamp": "2025-10-31T12:00:00"
+}
+```
+
+---
+
+#### `GET /lecturas/estado/en-progreso`
+
+Obtener todos los libros en progreso del usuario actual
+
+**Autenticación:** Requerida
+
+**Query Parameters:**
+
+- `skip` (opcional): Número de registros a omitir (default: 0)
+- `limit` (opcional): Número máximo de registros (default: 100)
+
+**Respuesta Exitosa (200):**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "idLectura": 12,
+      "idUsuario": 1,
+      "idLibro": 5,
+      "paginaLeidas": 150,
+      "estado": "en_progreso",
+      "libro_titulo": "Clean Code",
+      "libro_total_paginas": 464,
+      "progreso_porcentaje": 32.33,
+      "url_firmada": "https://semilleros-frontend.s3.amazonaws.com/libros/...",
+      "urlPortada": "https://books.google.com/books/content?id=..."
+    },
+    {
+      "idLectura": 15,
+      "idUsuario": 1,
+      "idLibro": 9,
+      "paginaLeidas": 87,
+      "estado": "en_progreso",
+      "libro_titulo": "El Principito",
+      "libro_total_paginas": 96,
+      "progreso_porcentaje": 90.63,
+      "url_firmada": null,
+      "urlPortada": "https://books.google.com/books/content?id=..."
+    }
+  ],
+  "message": "Libros en progreso obtenidos exitosamente",
+  "count": 2,
+  "timestamp": "2025-10-31T12:00:00"
+}
+```
+
+---
+
+#### `GET /lecturas/estadisticas/paginas-leidas`
+
+Obtener el total de páginas leídas por el usuario actual
+
+**Autenticación:** Requerida
+
+**Respuesta Exitosa (200):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "total_paginas_leidas": 5847,
+    "total_lecturas": 25,
+    "promedio_paginas_por_lectura": 233.88,
+    "usuario_id": 1,
+    "usuario_nombre": "Juan Pérez"
+  },
+  "message": "Total de páginas leídas: 5847",
+  "timestamp": "2025-10-31T12:00:00"
+}
+```
 
 ---
 

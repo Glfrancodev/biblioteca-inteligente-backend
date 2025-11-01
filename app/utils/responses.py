@@ -110,20 +110,36 @@ class ErrorCodes:
 
 def create_success_response(
     data: Any,
-    message: str = "Operación exitosa"
+    message: str = "Operación exitosa",
+    count: Optional[int] = None
 ) -> dict:
     """
     Helper para crear respuestas exitosas de forma sencilla.
     
+    Args:
+        data: Datos de la respuesta
+        message: Mensaje descriptivo
+        count: Cantidad de elementos (opcional, para listas)
+    
     Ejemplo:
-        return create_success_response(usuario, "Usuario creado exitosamente")
+        return create_success_response(
+            data=usuarios, 
+            message="Usuarios obtenidos exitosamente",
+            count=len(usuarios)
+        )
     """
-    return {
+    response = {
         "success": True,
         "data": data,
         "message": message,
         "timestamp": datetime.utcnow().isoformat()
     }
+    
+    # Añadir count solo si se proporciona
+    if count is not None:
+        response["count"] = count
+    
+    return response
 
 
 def create_error_response(

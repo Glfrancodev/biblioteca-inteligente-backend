@@ -149,8 +149,11 @@ class GoogleBooksService:
             # Editorial
             editorial = volume_info.get("publisher", "Editorial Desconocida")
             
-            # Páginas
+            # Páginas - si no hay o es 0, asignar un número aleatorio entre 100 y 200
+            import random
             paginas_totales = volume_info.get("pageCount", 0)
+            if not paginas_totales or paginas_totales == 0:
+                paginas_totales = random.randint(100, 200)
             
             # Sinopsis
             sinopsis = volume_info.get("description", "")

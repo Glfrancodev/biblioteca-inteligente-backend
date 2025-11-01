@@ -99,7 +99,8 @@ def read_lecturas(
     
     return create_success_response(
         data=responses,
-        message=f"{len(responses)} lecturas obtenidas exitosamente"
+        message="Lecturas obtenidas exitosamente",
+        count=len(responses)
     )
 
 
@@ -136,7 +137,8 @@ def read_lectura(
     lectura_dict = response.model_dump()
     return create_success_response(
         data=lectura_dict,
-        message="Lectura obtenida exitosamente"
+        message="Lectura obtenida exitosamente",
+        count=1
     )
 
 
@@ -216,4 +218,146 @@ def delete_lectura(
     return create_success_response(
         data={"deleted": True, "id": lectura_id},
         message="Lectura eliminada exitosamente"
+    )
+
+
+# NUEVOS ENDPOINTS DE ESTADÍSTICAS
+
+@router.get("/estado/completados")
+def get_libros_completados(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_active_user)
+):
+    """Obtener todos los libros completados del usuario actual"""
+    from app.models.lectura import EstadoLectura
+    from app.services.s3_service import s3_service
+    
+    lecturas_completadas = db.query(Lectura).filter(
+        Lectura.idUsuario == current_user.idUsuario,
+        Lectura.estado == EstadoLectura.COMPLETADO
+    ).offset(skip).limit(limit).all()
+    
+    # Construir respuesta detallada
+    responses = []
+    for lectura in lecturas_completadas:
+        response = LecturaDetailResponse.model_validate(lectura)
+        response.libro_titulo = lectura.libro.titulo
+        response.libro_total_paginas = lectura.libro.totalPaginas
+        response.progreso_porcentaje = 100.0  # Siempre 100% porque está completado
+        
+        # Convertir a dict para añadir campos adicionales
+        lectura_dict = response.model_dump()
+        
+        # Añadir URL firmada si el libro tiene archivo en S3
+        if lectura.libro.urlLibro:
+            try:
+                lectura_dict["url_firmada"] = s3_service.generate_presigned_url(lectura.libro.urlLibro)
+            except:
+                lectura_dict["url_firmada"] = None
+        else:
+            lectura_dict["url_firmada"] = None
+        
+        # Añadir URL de portada
+        lectura_dict["urlPortada"] = lectura.libro.urlPortada if lectura.libro.urlPortada else None
+        
+        responses.append(lectura_dict)
+    
+    return create_success_response(
+        data=responses,
+        message="Libros completados obtenidos exitosamente",
+        count=len(responses)
+    )
+
+
+@router.get("/estado/en-progreso")
+def get_libros_en_progreso(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_active_user)
+):
+    """Obtener todos los libros en progreso del usuario actual"""
+    from app.models.lectura import EstadoLectura
+    from app.services.s3_service import s3_service
+    
+    lecturas_en_progreso = db.query(Lectura).filter(
+        Lectura.idUsuario == current_user.idUsuario,
+        Lectura.estado == EstadoLectura.EN_PROGRESO
+    ).offset(skip).limit(limit).all()
+    
+    # Construir respuesta detallada
+    responses = []
+    for lectura in lecturas_en_progreso:
+        response = LecturaDetailResponse.model_validate(lectura)
+        response.libro_titulo = lectura.libro.titulo
+        response.libro_total_paginas = lectura.libro.totalPaginas
+        
+        # Calcular progreso
+        if lectura.libro.totalPaginas > 0:
+            response.progreso_porcentaje = (lectura.paginaLeidas / lectura.libro.totalPaginas) * 100
+        else:
+            response.progreso_porcentaje = 0
+        
+        # Convertir a dict para añadir campos adicionales
+        lectura_dict = response.model_dump()
+        
+        # Añadir URL firmada si el libro tiene archivo en S3
+        if lectura.libro.urlLibro:
+            try:
+                lectura_dict["url_firmada"] = s3_service.generate_presigned_url(lectura.libro.urlLibro)
+            except:
+                lectura_dict["url_firmada"] = None
+        else:
+            lectura_dict["url_firmada"] = None
+        
+        # Añadir URL de portada
+        lectura_dict["urlPortada"] = lectura.libro.urlPortada if lectura.libro.urlPortada else None
+        
+        responses.append(lectura_dict)
+    
+    return create_success_response(
+        data=responses,
+        message="Libros en progreso obtenidos exitosamente",
+        count=len(responses)
+    )
+
+
+@router.get("/estadisticas/paginas-leidas")
+def get_total_paginas_leidas(
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_active_user)
+):
+    """Obtener el total de páginas leídas por el usuario actual"""
+    from sqlalchemy import func
+    
+    # Sumar todas las páginas leídas del usuario
+    total_paginas = db.query(
+        func.sum(Lectura.paginaLeidas)
+    ).filter(
+        Lectura.idUsuario == current_user.idUsuario
+    ).scalar()
+    
+    # Si no hay lecturas, devolver 0
+    total_paginas = total_paginas if total_paginas else 0
+    
+    # Contar total de lecturas para contexto adicional
+    total_lecturas = db.query(Lectura).filter(
+        Lectura.idUsuario == current_user.idUsuario
+    ).count()
+    
+    # Calcular promedio de páginas por lectura
+    promedio_paginas = total_paginas / total_lecturas if total_lecturas > 0 else 0
+    
+    return create_success_response(
+        data={
+            "total_paginas_leidas": total_paginas,
+            "total_lecturas": total_lecturas,
+            "promedio_paginas_por_lectura": round(promedio_paginas, 2),
+            "usuario_id": current_user.idUsuario,
+            "usuario_nombre": current_user.nombre
+        },
+        message=f"Total de páginas leídas: {total_paginas}",
+        count=1
     )

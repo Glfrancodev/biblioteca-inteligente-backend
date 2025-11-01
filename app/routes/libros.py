@@ -250,7 +250,8 @@ def read_libros(
     
     return create_success_response(
         data=responses,
-        message=f"{len(responses)} libros obtenidos exitosamente"
+        message="Libros obtenidos exitosamente",
+        count=len(responses)
     )
 
 
@@ -283,7 +284,8 @@ def read_libro(libro_id: int, db: Session = Depends(get_db)):
     
     return create_success_response(
         data=libro_dict,
-        message="Libro obtenido exitosamente"
+        message="Libro obtenido exitosamente",
+        count=1
     )
 
 
@@ -406,7 +408,8 @@ def read_editoriales(skip: int = 0, limit: int = 100, db: Session = Depends(get_
     
     return create_success_response(
         data=editoriales_dict,
-        message=f"{len(editoriales_dict)} editoriales obtenidas exitosamente"
+        message="Editoriales obtenidas exitosamente",
+        count=len(editoriales_dict)
     )
 
 
@@ -438,7 +441,8 @@ def read_autores(skip: int = 0, limit: int = 100, db: Session = Depends(get_db))
     
     return create_success_response(
         data=autores_dict,
-        message=f"{len(autores_dict)} autores obtenidos exitosamente"
+        message="Autores obtenidos exitosamente",
+        count=len(autores_dict)
     )
 
 
@@ -604,5 +608,6 @@ def get_populate_status(db: Session = Depends(get_db)):
             "libros_con_pdf": libros_con_pdf,
             "libros_sin_pdf": libros_sin_pdf
         },
-        message="Estadísticas obtenidas exitosamente"
+        message="Estadísticas obtenidas exitosamente",
+        count=1
     )
